@@ -115,7 +115,6 @@ func (nn *NeuralNetwork) Backpropagate(output []float64) float64 {
 
 	return J
 }
-
 func (nn *NeuralNetwork) Train(dataset [][][]float64, iterations int) {
 	for i := 0; i < iterations; i++ {
 
@@ -134,7 +133,6 @@ func (nn *NeuralNetwork) Train(dataset [][][]float64, iterations int) {
 
 	}
 }
-
 func (nn *NeuralNetwork) Predict(X []float64) []float64 {
 	return nn.Forward(X)
 }
