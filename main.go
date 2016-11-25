@@ -4,7 +4,7 @@ import nnet "github.com/assimoes/NN/neuralnetwork"
 
 func main() {
 
-	nn := nnet.NewNeuralNetwork(2, 4, 1, 0.001, 0.06)
+	nn := nnet.NewNeuralNetwork(2, 4, 1, 0.001, 0.6)
 
 	dataset := [][][]float64{
 		{{.1, .2}, {.3}},
