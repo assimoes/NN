@@ -47,66 +47,68 @@ func (nn *NeuralNetwork) Forward(X []float64) []float64 {
 	}
 
 	// calcula a função de activação da hidden layer (a2)
-	for i := 0; i < nn.hiddenSize-1; i++ {
-		var sum float64
-		for j := 0; j < nn.inputSize; j++ {
-			sum += nn.a1[j] * nn.w1[j][i]
-		}
-
-		nn.a2[i] = helpers.Sigmoid(sum)
-	}
+	ForwardActivation(nn.hiddenSize-1, nn.inputSize, nn.a1, nn.w1, nn.a2, helpers.Sigmoid)
 
 	// calcula a função de activação da output layer (a3) ou hipótese.
-
-	for i := 0; i < nn.outputSize; i++ {
-		var sum float64
-		for j := 0; j < nn.hiddenSize; j++ {
-			sum += nn.a2[j] * nn.w2[j][i]
-		}
-
-		nn.a3[i] = helpers.Sigmoid(sum)
-	}
+	ForwardActivation(nn.outputSize, nn.hiddenSize, nn.a2, nn.w2, nn.a3, helpers.Sigmoid)
 
 	return nn.a3
 }
 
+type activation func(float64) float64
+
+func ForwardActivation(nrows, ncols int, a []float64, b [][]float64, target []float64, act activation) {
+
+	for i := 0; i < nrows; i++ {
+		var sum float64
+		for j := 0; j < ncols; j++ {
+			sum += a[j] * b[j][i]
+		}
+
+		target[i] = act(sum)
+	}
+}
+
+func UpdateWeights(nrows, ncols int, deltas []float64, activatedNeuron []float64, weight [][]float64, changes [][]float64, lrate, momentum float64) {
+
+	for i := 0; i < nrows; i++ {
+		for j := 0; j < ncols; j++ {
+			change := deltas[j] * activatedNeuron[i]
+			weight[i][j] = weight[i][j] + lrate*change + momentum*changes[i][j]
+			changes[i][j] = change
+		}
+	}
+
+}
+
+func ComputeErrors(outputSize, hiddenSize int, output, hypothesis, layer2activation []float64, layer2weights [][]float64) ([]float64, []float64) {
+	delta2 := helpers.MakeVector(hiddenSize, 0.0)
+	delta3 := helpers.MakeVector(outputSize, 0.0)
+
+	for i := 0; i < outputSize; i++ {
+		delta3[i] = helpers.DSigmoid(hypothesis[i]) * (output[i] - hypothesis[i])
+	}
+
+	for i := 0; i < hiddenSize; i++ {
+		var err float64
+		for j := 0; j < outputSize; j++ {
+			err += delta3[j] * layer2weights[i][j]
+		}
+
+		delta2[i] = helpers.DSigmoid(layer2activation[i]) * err
+	}
+
+	return delta2, delta3
+}
+
 func (nn *NeuralNetwork) Backpropagate(output []float64, learningRate, momentum float64) float64 {
 
-	a3Deltas := helpers.MakeVector(nn.outputSize, 0.0)
-	a2Deltas := helpers.MakeVector(nn.hiddenSize, 0.0)
-
-	// calcula deltas entre output e hipotese e aplica a derivada parcial da função sigmoid original
-	for i := 0; i < nn.outputSize; i++ {
-		a3Deltas[i] = helpers.DSigmoid(nn.a3[i]) * (output[i] - nn.a3[i])
-	}
-
-	// calcula erro
-	for i := 0; i < nn.hiddenSize; i++ {
-		var err float64
-		for j := 0; j < nn.outputSize; j++ {
-			err += a3Deltas[j] * nn.w2[i][j]
-		}
-
-		a2Deltas[i] = helpers.DSigmoid(nn.a2[i]) * err
-	}
-
+	// calcula erros que serão propagados para corrigir as sinapses
+	delta2, delta3 := ComputeErrors(nn.outputSize, nn.hiddenSize, output, nn.a3, nn.a2, nn.w2)
 	// actualiza w2
-	for i := 0; i < nn.hiddenSize; i++ {
-		for j := 0; j < nn.outputSize; j++ {
-			change := a3Deltas[j] * nn.a2[i]
-			nn.w2[i][j] = nn.w2[i][j] + learningRate*change + momentum*nn.changes2[i][j]
-			nn.changes2[i][j] = change
-		}
-	}
-
+	UpdateWeights(nn.hiddenSize, nn.outputSize, delta3, nn.a2, nn.w2, nn.changes2, learningRate, momentum)
 	//actualiza w1
-	for i := 0; i < nn.inputSize; i++ {
-		for j := 0; j < nn.hiddenSize; j++ {
-			change := a2Deltas[j] * nn.a1[i]
-			nn.w1[i][j] = nn.w1[i][j] + learningRate*change + momentum*nn.changes1[i][j]
-			nn.changes1[i][j] = change
-		}
-	}
+	UpdateWeights(nn.inputSize, nn.hiddenSize, delta2, nn.a1, nn.w1, nn.changes1, learningRate, momentum)
 
 	// calcula erro quadrado total desta previsão
 	var J float64
