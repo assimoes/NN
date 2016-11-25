@@ -1,6 +1,7 @@
 package neuralnetwork
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/assimoes/NN/helpers"
@@ -39,22 +40,6 @@ func NewNeuralNetwork(i, h, o int, l, m float64) (nn NeuralNetwork) {
 	return nn
 }
 
-func (nn *NeuralNetwork) Forward(X []float64) []float64 {
-
-	// no caso da função de activação dos neuronios de entrada (a1), o valor é a própria entrada
-	for i := 0; i < nn.inputSize-1; i++ {
-		nn.a1[i] = X[i]
-	}
-
-	// calcula a função de activação da hidden layer (a2)
-	forwardActivation(nn.hiddenSize-1, nn.inputSize, nn.a1, nn.w1, nn.a2, helpers.Sigmoid)
-
-	// calcula a função de activação da output layer (a3) ou hipótese.
-	forwardActivation(nn.outputSize, nn.hiddenSize, nn.a2, nn.w2, nn.a3, helpers.Sigmoid)
-
-	return nn.a3
-}
-
 type activation func(float64) float64
 
 func forwardActivation(nrows, ncols int, a []float64, b [][]float64, target []float64, act activation) {
@@ -68,7 +53,6 @@ func forwardActivation(nrows, ncols int, a []float64, b [][]float64, target []fl
 		target[i] = act(sum)
 	}
 }
-
 func updateWeights(nrows, ncols int, deltas []float64, activatedNeuron []float64, weight [][]float64, changes [][]float64, lrate, momentum float64) {
 
 	for i := 0; i < nrows; i++ {
@@ -80,7 +64,6 @@ func updateWeights(nrows, ncols int, deltas []float64, activatedNeuron []float64
 	}
 
 }
-
 func computeErrors(outputSize, hiddenSize int, output, hypothesis, layer2activation []float64, layer2weights [][]float64) ([]float64, []float64) {
 	delta2 := helpers.MakeVector(hiddenSize, 0.0)
 	delta3 := helpers.MakeVector(outputSize, 0.0)
@@ -100,15 +83,29 @@ func computeErrors(outputSize, hiddenSize int, output, hypothesis, layer2activat
 
 	return delta2, delta3
 }
+func (nn *NeuralNetwork) Forward(X []float64) []float64 {
 
-func (nn *NeuralNetwork) Backpropagate(output []float64, learningRate, momentum float64) float64 {
+	// no caso da função de activação dos neuronios de entrada (a1), o valor é a própria entrada
+	for i := 0; i < nn.inputSize-1; i++ {
+		nn.a1[i] = X[i]
+	}
+
+	// calcula a função de activação da hidden layer (a2)
+	forwardActivation(nn.hiddenSize-1, nn.inputSize, nn.a1, nn.w1, nn.a2, helpers.Sigmoid)
+
+	// calcula a função de activação da output layer (a3) ou hipótese.
+	forwardActivation(nn.outputSize, nn.hiddenSize, nn.a2, nn.w2, nn.a3, helpers.Sigmoid)
+
+	return nn.a3
+}
+func (nn *NeuralNetwork) Backpropagate(output []float64) float64 {
 
 	// calcula erros que serão propagados para corrigir as sinapses
 	delta2, delta3 := computeErrors(nn.outputSize, nn.hiddenSize, output, nn.a3, nn.a2, nn.w2)
 	// actualiza w2
-	updateWeights(nn.hiddenSize, nn.outputSize, delta3, nn.a2, nn.w2, nn.changes2, learningRate, momentum)
+	updateWeights(nn.hiddenSize, nn.outputSize, delta3, nn.a2, nn.w2, nn.changes2, nn.learningRate, nn.momentum)
 	//actualiza w1
-	updateWeights(nn.inputSize, nn.hiddenSize, delta2, nn.a1, nn.w1, nn.changes1, learningRate, momentum)
+	updateWeights(nn.inputSize, nn.hiddenSize, delta2, nn.a1, nn.w1, nn.changes1, nn.learningRate, nn.momentum)
 
 	// calcula erro quadrado total desta previsão
 	var J float64
@@ -117,4 +114,27 @@ func (nn *NeuralNetwork) Backpropagate(output []float64, learningRate, momentum 
 	}
 
 	return J
+}
+
+func (nn *NeuralNetwork) Train(dataset [][][]float64, iterations int) {
+	for i := 0; i < iterations; i++ {
+
+		var j float64
+
+		for _, ds := range dataset {
+
+			hypothesis := nn.Forward(ds[0])
+			e := nn.Backpropagate(ds[1])
+			j += e
+
+			if i%1000 == 0 {
+				fmt.Println(i, e, hypothesis, ds[1])
+			}
+		}
+
+	}
+}
+
+func (nn *NeuralNetwork) Predict(X []float64) []float64 {
+	return nn.Forward(X)
 }
