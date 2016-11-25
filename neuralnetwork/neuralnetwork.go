@@ -47,17 +47,17 @@ func (nn *NeuralNetwork) Forward(X []float64) []float64 {
 	}
 
 	// calcula a função de activação da hidden layer (a2)
-	ForwardActivation(nn.hiddenSize-1, nn.inputSize, nn.a1, nn.w1, nn.a2, helpers.Sigmoid)
+	forwardActivation(nn.hiddenSize-1, nn.inputSize, nn.a1, nn.w1, nn.a2, helpers.Sigmoid)
 
 	// calcula a função de activação da output layer (a3) ou hipótese.
-	ForwardActivation(nn.outputSize, nn.hiddenSize, nn.a2, nn.w2, nn.a3, helpers.Sigmoid)
+	forwardActivation(nn.outputSize, nn.hiddenSize, nn.a2, nn.w2, nn.a3, helpers.Sigmoid)
 
 	return nn.a3
 }
 
 type activation func(float64) float64
 
-func ForwardActivation(nrows, ncols int, a []float64, b [][]float64, target []float64, act activation) {
+func forwardActivation(nrows, ncols int, a []float64, b [][]float64, target []float64, act activation) {
 
 	for i := 0; i < nrows; i++ {
 		var sum float64
@@ -69,7 +69,7 @@ func ForwardActivation(nrows, ncols int, a []float64, b [][]float64, target []fl
 	}
 }
 
-func UpdateWeights(nrows, ncols int, deltas []float64, activatedNeuron []float64, weight [][]float64, changes [][]float64, lrate, momentum float64) {
+func updateWeights(nrows, ncols int, deltas []float64, activatedNeuron []float64, weight [][]float64, changes [][]float64, lrate, momentum float64) {
 
 	for i := 0; i < nrows; i++ {
 		for j := 0; j < ncols; j++ {
@@ -81,7 +81,7 @@ func UpdateWeights(nrows, ncols int, deltas []float64, activatedNeuron []float64
 
 }
 
-func ComputeErrors(outputSize, hiddenSize int, output, hypothesis, layer2activation []float64, layer2weights [][]float64) ([]float64, []float64) {
+func computeErrors(outputSize, hiddenSize int, output, hypothesis, layer2activation []float64, layer2weights [][]float64) ([]float64, []float64) {
 	delta2 := helpers.MakeVector(hiddenSize, 0.0)
 	delta3 := helpers.MakeVector(outputSize, 0.0)
 
@@ -104,11 +104,11 @@ func ComputeErrors(outputSize, hiddenSize int, output, hypothesis, layer2activat
 func (nn *NeuralNetwork) Backpropagate(output []float64, learningRate, momentum float64) float64 {
 
 	// calcula erros que serão propagados para corrigir as sinapses
-	delta2, delta3 := ComputeErrors(nn.outputSize, nn.hiddenSize, output, nn.a3, nn.a2, nn.w2)
+	delta2, delta3 := computeErrors(nn.outputSize, nn.hiddenSize, output, nn.a3, nn.a2, nn.w2)
 	// actualiza w2
-	UpdateWeights(nn.hiddenSize, nn.outputSize, delta3, nn.a2, nn.w2, nn.changes2, learningRate, momentum)
+	updateWeights(nn.hiddenSize, nn.outputSize, delta3, nn.a2, nn.w2, nn.changes2, learningRate, momentum)
 	//actualiza w1
-	UpdateWeights(nn.inputSize, nn.hiddenSize, delta2, nn.a1, nn.w1, nn.changes1, learningRate, momentum)
+	updateWeights(nn.inputSize, nn.hiddenSize, delta2, nn.a1, nn.w1, nn.changes1, learningRate, momentum)
 
 	// calcula erro quadrado total desta previsão
 	var J float64
