@@ -8,34 +8,34 @@ import (
 )
 
 type NeuralNetwork struct {
-	inputSize          int
-	hiddenSize         int
-	outputSize         int
-	learningRate       float64
-	momentum           float64
-	a1, a2, a3         []float64
-	w1, w2             [][]float64
-	changes1, changes2 [][]float64
+	InputSize          int
+	HiddenSize         int
+	OutputSize         int
+	LearningRate       float64
+	Momentum           float64
+	A1, A2, A3         []float64
+	W1, W2             [][]float64
+	Changes1, Changes2 [][]float64
 }
 
 func NewNeuralNetwork(i, h, o int, l, m float64) (nn NeuralNetwork) {
 
-	nn.inputSize = i + 1  // +bias
-	nn.hiddenSize = h + 1 //+bias
+	nn.InputSize = i + 1  // +bias
+	nn.HiddenSize = h + 1 //+bias
 
-	nn.outputSize = o
-	nn.learningRate = l
-	nn.momentum = m
+	nn.OutputSize = o
+	nn.LearningRate = l
+	nn.Momentum = m
 
-	nn.a1 = helpers.MakeVector(nn.inputSize, 1.0)
-	nn.a2 = helpers.MakeVector(nn.hiddenSize, 1.0)
-	nn.a3 = helpers.MakeVector(nn.outputSize, 1.0)
+	nn.A1 = helpers.MakeVector(nn.InputSize, 1.0)
+	nn.A2 = helpers.MakeVector(nn.HiddenSize, 1.0)
+	nn.A3 = helpers.MakeVector(nn.OutputSize, 1.0)
 
-	nn.w1 = helpers.RandomMatrix(nn.inputSize, nn.hiddenSize, -1.0, 1.0)
-	nn.w2 = helpers.RandomMatrix(nn.hiddenSize, nn.outputSize, -1.0, 1.0)
+	nn.W1 = helpers.RandomMatrix(nn.InputSize, nn.HiddenSize, -1.0, 1.0)
+	nn.W2 = helpers.RandomMatrix(nn.HiddenSize, nn.OutputSize, -1.0, 1.0)
 
-	nn.changes1 = helpers.MakeMatrix(nn.inputSize, nn.hiddenSize)
-	nn.changes2 = helpers.MakeMatrix(nn.hiddenSize, nn.outputSize)
+	nn.Changes1 = helpers.MakeMatrix(nn.InputSize, nn.HiddenSize)
+	nn.Changes2 = helpers.MakeMatrix(nn.HiddenSize, nn.OutputSize)
 
 	return nn
 }
@@ -86,31 +86,31 @@ func computeErrors(outputSize, hiddenSize int, output, hypothesis, layer2activat
 func (nn *NeuralNetwork) Forward(X []float64) []float64 {
 
 	// no caso da função de activação dos neuronios de entrada (a1), o valor é a própria entrada
-	for i := 0; i < nn.inputSize-1; i++ {
-		nn.a1[i] = X[i]
+	for i := 0; i < nn.InputSize-1; i++ {
+		nn.A1[i] = X[i]
 	}
 
 	// calcula a função de activação da hidden layer (a2)
-	forwardActivation(nn.hiddenSize-1, nn.inputSize, nn.a1, nn.w1, nn.a2, helpers.Sigmoid)
+	forwardActivation(nn.HiddenSize-1, nn.InputSize, nn.A1, nn.W1, nn.A2, helpers.Sigmoid)
 
 	// calcula a função de activação da output layer (a3) ou hipótese.
-	forwardActivation(nn.outputSize, nn.hiddenSize, nn.a2, nn.w2, nn.a3, helpers.Sigmoid)
+	forwardActivation(nn.OutputSize, nn.HiddenSize, nn.A2, nn.W2, nn.A3, helpers.Sigmoid)
 
-	return nn.a3
+	return nn.A3
 }
 func (nn *NeuralNetwork) Backpropagate(output []float64) float64 {
 
 	// calcula erros que serão propagados para corrigir as sinapses
-	delta2, delta3 := computeErrors(nn.outputSize, nn.hiddenSize, output, nn.a3, nn.a2, nn.w2)
+	delta2, delta3 := computeErrors(nn.OutputSize, nn.HiddenSize, output, nn.A3, nn.A2, nn.W2)
 	// actualiza w2
-	updateWeights(nn.hiddenSize, nn.outputSize, delta3, nn.a2, nn.w2, nn.changes2, nn.learningRate, nn.momentum)
+	updateWeights(nn.HiddenSize, nn.OutputSize, delta3, nn.A2, nn.W2, nn.Changes2, nn.LearningRate, nn.Momentum)
 	//actualiza w1
-	updateWeights(nn.inputSize, nn.hiddenSize, delta2, nn.a1, nn.w1, nn.changes1, nn.learningRate, nn.momentum)
+	updateWeights(nn.InputSize, nn.HiddenSize, delta2, nn.A1, nn.W1, nn.Changes1, nn.LearningRate, nn.Momentum)
 
 	// calcula erro quadrado total desta previsão
 	var J float64
 	for i := 0; i < len(output); i++ {
-		J += 0.5 * math.Pow(output[i]-nn.a3[i], 2)
+		J += 0.5 * math.Pow(output[i]-nn.A3[i], 2)
 	}
 
 	return J
