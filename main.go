@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"net/http"
 
-	api "github.com/assimoes/NN/api"
 	nnet "github.com/assimoes/NN/neuralnetwork"
 	p "github.com/assimoes/NN/persistence"
+	redis "github.com/assimoes/NN/redis"
 )
 
 func main() {
@@ -19,9 +17,7 @@ func main() {
 
 	fmt.Println(nn.Predict(dataset))
 
-	router := api.NewRouter()
-	log.Fatal(http.ListenAndServe(":8080", router))
-
+	redis.Run()
 }
 
 func fromScratch() {
